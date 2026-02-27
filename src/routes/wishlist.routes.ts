@@ -9,11 +9,13 @@ import { protect } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.use(protect); // All wishlist routes require auth
+router.use(protect);
 
 router.get("/", getWishlist);
 router.post("/:productId", toggleWishlistItem);
-router.delete("/:productId", removeWishlistItem);
+
+// ✅ FIX: DELETE "/" must come BEFORE DELETE "/:productId"
 router.delete("/", clearWishlist);
+router.delete("/:productId", removeWishlistItem);
 
 export default router;
