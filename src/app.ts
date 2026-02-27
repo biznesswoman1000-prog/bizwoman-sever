@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import prisma from "./config/database";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -41,8 +42,23 @@ const app: Application = express();
 // ============================================
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:3000",
+  process.env.CLIENT_URL_2,
+  process.env.CLIENT_URL_3,
+  process.env.CLIENT_URL_4,
+].filter(Boolean) as string[];
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL || "http://localhost:3000",
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void,
+  ) => {
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -73,6 +89,28 @@ app.get("/health", (req: Request, res: Response) => {
     message: "Server is running",
     timestamp: new Date().toISOString(),
   });
+});
+
+// Root route - API status
+app.get("/", async (req: Request, res: Response) => {
+  try {
+    await prisma.$connect();
+    res.status(200).json({
+      success: true,
+      message: "🚀 EquipUniverse API is live and running",
+      version: "1.0.0",
+      database: "connected",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(200).json({
+      success: true,
+      message: "🚀 EquipUniverse API is live and running",
+      version: "1.0.0",
+      database: "disconnected",
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // API v1 routes
